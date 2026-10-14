@@ -1,0 +1,103 @@
+{
+  "GPT-OSS-120B-answer": {
+    "model": "openai/gpt-oss-120b",
+    "prompt": {
+      "system": "Answer the question directly and concisely. Do not provide explanations or additional information unless necessary to answer the question.",
+      "user": "{question}"
+    },
+    "generation": "vLLM (/v1/chat/completions, tensor parallel 2 over two nodes), reasoning_effort low, max_tokens 1024, server-default sampling",
+    "notes": "Missing, failed or empty answers of the first run were regenerated with the same setup (gpt_oss_120b_fill.jsonl); empty answers re-sampled up to 5 times.",
+    "source_files": [
+      "results/target_outputs/gpt_oss_120b.jsonl",
+      "results/target_outputs/gpt_oss_120b_fill.jsonl"
+    ],
+    "non_empty": {
+      "total": 14729,
+      "of": 14729,
+      "train": 11783,
+      "valid": 1472,
+      "test": 1474
+    }
+  },
+  "LLAMA-8B-answer": {
+    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "prompt": "Question: {question}\nAnswer:",
+    "generation": {
+      "valid/test": "Hugging Face transformers, greedy decoding, max_new_tokens 128, prompt without chat template (KG-Adapter Base answers)",
+      "train": "vLLM, temperature 0, max_tokens 128, prompt without chat template"
+    },
+    "notes": "No train answer was empty, so none was regenerated. vLLM and Hugging Face greedy decoding agree on short answers but can diverge late in long run-on answers (numerical differences); on a 30-question check the outputs were identical for 9/30 (Llama-3 8B) and 22/30 (Phi-4).",
+    "source_files": [
+      "data/kg_adapter_base_answers/llama_8b/validation1472_base_correctkg_gpt56_8class.json",
+      "data/kg_adapter_base_answers/llama_8b/test1474_base_correctkg_gpt56_8class.json",
+      "results/target_outputs/llama_8b_raw_base.jsonl"
+    ],
+    "non_empty": {
+      "total": 14729,
+      "of": 14729,
+      "train": 11783,
+      "valid": 1472,
+      "test": 1474
+    }
+  },
+  "Mistral-7B-answer": {
+    "model": "mistralai/Mistral-7B-Instruct-v0.3",
+    "prompt": "Question: {question}\nAnswer:",
+    "generation": {
+      "train/valid/test": "Hugging Face transformers, greedy decoding, max_new_tokens 128, prompt without chat template (KG-Adapter Base answers)"
+    },
+    "notes": "",
+    "source_files": [
+      "data/kg_adapter_base_answers/mistral_7b/train11783_base_correctkg.json",
+      "data/kg_adapter_base_answers/mistral_7b/validation1472_base_correctkg_gpt56_8class.json",
+      "data/kg_adapter_base_answers/mistral_7b/test1474_base_correctkg_gpt56_8class.json"
+    ],
+    "non_empty": {
+      "total": 14729,
+      "of": 14729,
+      "train": 11783,
+      "valid": 1472,
+      "test": 1474
+    }
+  },
+  "Phi-4-answer": {
+    "model": "microsoft/phi-4",
+    "prompt": "Question: {question}\nAnswer:",
+    "generation": {
+      "valid/test": "Hugging Face transformers, greedy decoding, max_new_tokens 128, prompt without chat template (KG-Adapter Base answers)",
+      "train": "vLLM, temperature 0, max_tokens 128, prompt without chat template"
+    },
+    "notes": "Answers empty after strip() were regenerated with Hugging Face greedy decoding and a logits processor that blocks EOS and newline-only tokens until the generated text is non-whitespace (non-empty greedy outputs are unchanged). vLLM and Hugging Face greedy decoding agree on short answers but can diverge late in long run-on answers (numerical differences); on a 30-question check the outputs were identical for 9/30 (Llama-3 8B) and 22/30 (Phi-4).",
+    "source_files": [
+      "data/kg_adapter_base_answers/phi4/validation1472_base_correctkg_gpt56_8class.json",
+      "data/kg_adapter_base_answers/phi4/test1474_base_correctkg_gpt56_8class.json",
+      "results/target_outputs/phi4_raw_base.jsonl"
+    ],
+    "non_empty": {
+      "total": 14729,
+      "of": 14729,
+      "train": 11783,
+      "valid": 1472,
+      "test": 1474
+    }
+  },
+  "LLAMA-70B-answer": {
+    "model": "meta-llama/Llama-3.3-70B-Instruct",
+    "prompt": {
+      "system": "Answer the question directly and concisely. Do not provide explanations or additional information unless necessary to answer the question.",
+      "user": "{question}"
+    },
+    "generation": "vLLM (/v1/chat/completions, tensor parallel 2 over two nodes, bfloat16), max_tokens 1024, the model's default sampling (temperature 0.6, top_p 0.9)",
+    "notes": "Empty answers re-sampled up to 5 times (none were needed); answers that reached max_tokens are kept truncated.",
+    "source_files": [
+      "results/target_outputs/llama_3.3_70b.jsonl"
+    ],
+    "non_empty": {
+      "total": 14729,
+      "of": 14729,
+      "train": 11783,
+      "valid": 1472,
+      "test": 1474
+    }
+  }
+}
