@@ -1,5 +1,5 @@
 """
-Jena query features of the resource (25 of the 86 features)
+Query features of the resource computed with Apache Jena (parsed query and algebra)
 """
 
 import argparse
@@ -159,17 +159,9 @@ PFX = {"p": "http://www.wikidata.org/prop/", "pq": "http://www.wikidata.org/prop
        "wd": "http://www.wikidata.org/entity/", "wdt": "http://www.wikidata.org/prop/direct/",
        "xsd": "http://www.w3.org/2001/XMLSchema#"}
 
-COLUMNS = [
-    "query__triple_pattern_count",
-    "algebra__parse_success", "algebra__is_ask", "algebra__jena_num_variables", "algebra__n_nodes",
-    "algebra__n_bgp", "algebra__n_join", "algebra__n_filter", "algebra__n_group", "algebra__n_extend",
-    "algebra__n_project", "algebra__n_sequence", "algebra__n_distinct", "algebra__n_slice", "algebra__n_paths",
-    "algebra__n_subqueries", "algebra__max_depth", "algebra__n_leaves", "algebra__max_branching_factor",
-    "algebra__mean_branching_factor", "algebra__n_binary_ops", "algebra__n_unary_ops",
-    "algebra__longest_unary_chain", "algebra__jena_has_group_by", "algebra__jena_has_having",
-]
-FLOAT_COLUMNS = {"algebra__parse_success", "algebra__is_ask", "algebra__mean_branching_factor",
-                 "algebra__jena_has_group_by", "algebra__jena_has_having"}
+COLUMNS = ["query_num_triple_patterns", "query_is_ask", "query_num_computed_values", "query_num_distinct",
+           "query_num_limit_offset", "query_num_property_paths", "query_has_having"]
+FLOAT_COLUMNS = {"query_is_ask", "query_has_having"}
 
 
 def load_questions(paths, id_prefix="", ids_from=None):
@@ -209,24 +201,14 @@ def run_jena(rows, jena_home, work_dir):
 
 def features(j):
     n = j["byName"]
-    proj = n.get("project", 0)
     return {
-        "query__triple_pattern_count": j["tcTriples"] + j["tcPaths"],
-        "algebra__parse_success": 1.0,
-        "algebra__is_ask": 1.0 if j["queryType"] == "ASK" else 0.0,
-        "algebra__jena_num_variables": j["numVariables"],
-        "algebra__n_nodes": j["nodes"], "algebra__n_bgp": n.get("bgp", 0), "algebra__n_join": n.get("join", 0),
-        "algebra__n_filter": n.get("filter", 0), "algebra__n_group": n.get("group", 0),
-        "algebra__n_extend": n.get("extend", 0), "algebra__n_project": proj,
-        "algebra__n_sequence": n.get("sequence", 0), "algebra__n_distinct": n.get("distinct", 0),
-        "algebra__n_slice": n.get("slice", 0), "algebra__n_paths": j["paths"],
-        "algebra__n_subqueries": proj - (1 if j["opClass"] == "OpProject" else 0),
-        "algebra__max_depth": j["maxDepth"], "algebra__n_leaves": j["leaves"],
-        "algebra__max_branching_factor": j["maxBranch"],
-        "algebra__mean_branching_factor": j["childSum"] / j["internal"] if j["internal"] else 0.0,
-        "algebra__n_binary_ops": j["binary"], "algebra__n_unary_ops": j["unary"],
-        "algebra__longest_unary_chain": j["longestUnary"],
-        "algebra__jena_has_group_by": float(j["hasGroupBy"]), "algebra__jena_has_having": float(j["hasHaving"]),
+        "query_num_triple_patterns": j["tcTriples"] + j["tcPaths"],
+        "query_is_ask": 1.0 if j["queryType"] == "ASK" else 0.0,
+        "query_num_computed_values": n.get("extend", 0),   # BIND and SELECT expressions
+        "query_num_distinct": n.get("distinct", 0),
+        "query_num_limit_offset": n.get("slice", 0),
+        "query_num_property_paths": j["paths"],
+        "query_has_having": float(j["hasHaving"]),
     }
 
 
@@ -257,7 +239,7 @@ def main():
         for r in rows:
             v = features(out[r["id"]])
             w.writerow([r["id"]] + [fmt(c, v[c]) for c in COLUMNS])
-    print(f"{len(rows):,} questions, {len(COLUMNS)} Jena features -> {args.output}")
+    print(f"{len(rows):,} questions -> {args.output}")
 
 
 if __name__ == "__main__":

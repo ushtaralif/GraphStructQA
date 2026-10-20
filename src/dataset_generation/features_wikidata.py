@@ -1,5 +1,5 @@
 """
-Wikidata and query features of the resource (61 of the 86 features).
+Query and Wikidata features of the resource (all features except the Jena ones, see features_jena.py).
 """
 
 import argparse
@@ -18,25 +18,26 @@ PID_RE = re.compile(r'\bP[1-9][0-9]*\b')
 VAR_RE = re.compile(r'(?<![\w])[\?\$][A-Za-z_][A-Za-z0-9_]*')
 INCOMING_DEGREE_CAP = 1_000_000
 
-QUERY_FEATURES = ["distinct_entity_count", "distinct_property_count", "variable_count", "optional_count",
-                  "union_count", "filter_count", "subquery_count", "aggregation_count", "group_by_count",
-                  "order_by_count", "query_chars", "query_lines", "question_chars", "question_words"]
-ENTITY_FIELDS = ["num_statements", "num_references", "num_properties", "num_sitelinks", "num_aliases",
-                 "num_languages", "outgoing_degree", "incoming_degree_capped", "entity_entropy", "entity_obscurity"]
-PROPERTY_FIELDS = ["property_frequency", "distinct_value_count", "property_entropy", "property_subject_count",
-                   "property_obscurity"]
-AGGS = ["mean", "min", "max"]
-COLUMNS = ([f"query__{f}" for f in QUERY_FEATURES] + ["entity__has_entity"]
-           + [f"entity__{f}__{a}" for f in ENTITY_FIELDS for a in AGGS] + ["property__has_property"]
-           + [f"property__{f}__{a}" for f in PROPERTY_FIELDS for a in AGGS])
-INT_FIELDS = {"num_statements", "num_references", "num_properties", "num_sitelinks", "num_aliases", "num_languages",
-              "outgoing_degree", "incoming_degree_capped", "property_frequency", "distinct_value_count",
-              "property_subject_count"}
-INT_COLUMNS = ({f"query__{f}" for f in QUERY_FEATURES} | {"entity__has_entity", "property__has_property"}
-               | {f"{lvl}__{f}__{a}" for lvl in ("entity", "property") for f in INT_FIELDS for a in ("min", "max")})
+QUERY_COLUMNS = {"distinct_entity_count": "query_num_entities", "distinct_property_count": "query_num_properties",
+                 "variable_count": "query_num_variables", "optional_count": "query_num_optional",
+                 "union_count": "query_num_union", "filter_count": "query_num_filter",
+                 "subquery_count": "query_num_subqueries", "aggregation_count": "query_num_aggregates",
+                 "group_by_count": "query_num_group_by", "order_by_count": "query_num_order_by",
+                 "query_chars": "query_length_chars", "question_words": "question_length_words"}
+
+ENTITY_COLUMNS = {"num_statements": "entity_num_statements_mean", "num_references": "entity_num_references_mean",
+                  "num_properties": "entity_num_properties_mean", "num_sitelinks": "entity_num_sitelinks_mean",
+                  "num_aliases": "entity_num_aliases_mean", "num_languages": "entity_num_languages_mean",
+                  "outgoing_degree": "entity_outgoing_degree_mean",
+                  "incoming_degree_capped": "entity_incoming_degree_mean",
+                  "entity_entropy": "entity_entropy_mean", "entity_obscurity": "entity_obscurity_mean"}
+PROPERTY_COLUMNS = {"property_frequency": "property_num_triples_mean", "distinct_value_count": "property_num_values_mean",
+                    "property_entropy": "property_entropy_mean", "property_subject_count": "property_num_subjects_mean",
+                    "property_obscurity": "property_obscurity_mean"}
+COLUMNS = list(QUERY_COLUMNS.values()) + list(ENTITY_COLUMNS.values()) + ["has_property"] + list(PROPERTY_COLUMNS.values())
+INT_COLUMNS = set(QUERY_COLUMNS.values()) | {"has_property"}
 
 
-# ---------------------------------------------------------------- query features (stage 20)
 def remove_comments(s):
     """Remove '#' comments without damaging # inside <IRI> or strings."""
     out, in_iri, in_single, in_double, escape, i = [], False, False, False, False, 0
@@ -118,8 +119,6 @@ def query_features(question, sparql):
         "group_by_count": count_keyword(kw, r'\bGROUP\s+BY\b'),
         "order_by_count": count_keyword(kw, r'\bORDER\s+BY\b'),
         "query_chars": len(sparql),
-        "query_lines": len(sparql.splitlines()),
-        "question_chars": len(question),
         "question_words": len(question.split()),
     }, qids, pids
 
@@ -285,21 +284,16 @@ def cached(path, key, ids, fn, ql, workers, retries=5):
     return cache
 
 
-def aggregate(values):
-    return {"mean": sum(values) / len(values), "min": min(values), "max": max(values)}
+def mean(values):
+    return sum(values) / len(values) if values else 0.0
 
 
 def question_features(row, entities, properties):
     qf, qids, pids = query_features(row.get("question", ""), row.get("sparql", ""))
-    out = {f"query__{k}": v for k, v in qf.items()}
-    out["entity__has_entity"] = 1 if qids else 0
-    for f in ENTITY_FIELDS:
-        agg = aggregate([entities[q][f] for q in qids]) if qids else dict.fromkeys(AGGS, 0.0)
-        out.update({f"entity__{f}__{a}": agg[a] for a in AGGS})
-    out["property__has_property"] = 1 if pids else 0
-    for f in PROPERTY_FIELDS:
-        agg = aggregate([properties[p][f] for p in pids]) if pids else dict.fromkeys(AGGS, 0.0)
-        out.update({f"property__{f}__{a}": agg[a] for a in AGGS})
+    out = {QUERY_COLUMNS[k]: v for k, v in qf.items()}
+    out.update({c: mean([entities[q][f] for q in qids]) for f, c in ENTITY_COLUMNS.items()})
+    out["has_property"] = 1 if pids else 0
+    out.update({c: mean([properties[p][f] for p in pids]) for f, c in PROPERTY_COLUMNS.items()})
     return out
 
 
@@ -349,7 +343,7 @@ def main():
         for r in rows:
             v = question_features(r, entities, properties)
             w.writerow([r["id"]] + [fmt(c, v[c]) for c in COLUMNS])
-    print(f"{len(rows):,} questions, {len(COLUMNS)} Wikidata/query features -> {args.output}")
+    print(f"{len(rows):,} questions -> {args.output}")
 
 
 if __name__ == "__main__":

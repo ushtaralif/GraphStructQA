@@ -1,6 +1,5 @@
 """
-Compute the dataset features (the columns of data/feature_reduction/features_14729_reduced_mean.csv)
-for your own SPARQL queries.
+Compute the dataset features (the columns of data/features_14729.csv) for your own SPARQL queries.
 
 Requires a Wikidata SPARQL endpoint (QLever) and Apache Jena 6.2.0 with Java 21.
 
@@ -15,21 +14,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dataset_generation import features_wikidata as fw, features_jena as fj
-from feature_reduction.reduce_features import NAMES
-
-RELEASE = Path(__file__).resolve().parent.parent / "data" / "feature_reduction" / "features_14729_reduced_mean.csv"
-
-
-def released_columns(release=RELEASE):
-    """{raw column: released column}, in the column order of the release file."""
-    with open(release, newline="", encoding="utf-8") as f:
-        header = next(csv.reader(f))
-    raw = {col: r for r, (col, _, _) in NAMES.items()}
-    return {raw[c]: c for c in header if c in raw}
+from dataset_generation.merge_datasets import FEATURES
 
 
 def sparql_to_features(rows, endpoint, jena_home, cache_dir="wikidata_cache", work_dir=".jena_build"):
-    """rows: [{"id", "sparql", "question" (optional)}] -> {id: {raw feature: value}}"""
+    """rows: [{"id", "sparql", "question" (optional)}] -> {id: {feature: value}}"""
     parsed = [fw.query_features(r.get("question", ""), r["sparql"]) for r in rows]
     qids = sorted({q for _, qs, _ in parsed for q in qs})
     pids = sorted({p for _, _, ps in parsed for p in ps})
@@ -59,7 +48,6 @@ def main():
     ap.add_argument("--endpoint", required=True, help="QLever Wikidata SPARQL endpoint URL")
     ap.add_argument("--jena-home", default=os.environ.get("JENA_HOME"))
     ap.add_argument("--output", default=None, help="CSV (default: print to stdout)")
-    ap.add_argument("--release", default=RELEASE, help="features CSV whose columns are written")
     args = ap.parse_args()
     if not args.jena_home:
         sys.exit("set --jena-home or JENA_HOME")
@@ -72,10 +60,9 @@ def main():
 
     f = open(args.output, "w", newline="", encoding="utf-8") if args.output else sys.stdout
     w = csv.writer(f)
-    cols = released_columns(args.release)
-    w.writerow(["id"] + list(cols.values()))
+    w.writerow(["id"] + FEATURES)
     for r in rows:
-        w.writerow([r["id"]] + [fmt(c, feats[r["id"]][c]) for c in cols])
+        w.writerow([r["id"]] + [fmt(c, feats[r["id"]][c]) for c in FEATURES])
 
 
 if __name__ == "__main__":

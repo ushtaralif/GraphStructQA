@@ -10,25 +10,16 @@ import sys
 from pathlib import Path
 
 FEATURES = [
-    "query__triple_pattern_count", "query__distinct_entity_count", "query__distinct_property_count",
-    "query__variable_count", "query__optional_count", "query__union_count", "query__filter_count",
-    "query__subquery_count", "query__aggregation_count", "query__group_by_count", "query__order_by_count",
-    "query__query_chars", "query__query_lines", "query__question_chars", "query__question_words",
-    "entity__has_entity",
-    *[f"entity__{f}__{a}" for f in ("num_statements", "num_references", "num_properties", "num_sitelinks",
-                                    "num_aliases", "num_languages", "outgoing_degree", "incoming_degree_capped",
-                                    "entity_entropy", "entity_obscurity") for a in ("mean", "min", "max")],
-    "property__has_property",
-    *[f"property__{f}__{a}" for f in ("property_frequency", "distinct_value_count", "property_entropy",
-                                      "property_subject_count", "property_obscurity") for a in ("mean", "min", "max")],
-    "algebra__parse_success", "algebra__is_ask", "algebra__jena_num_variables", "algebra__n_nodes",
-    "algebra__n_bgp", "algebra__n_join", "algebra__n_filter", "algebra__n_group", "algebra__n_extend",
-    "algebra__n_project", "algebra__n_sequence", "algebra__n_distinct", "algebra__n_slice", "algebra__n_paths",
-    "algebra__n_subqueries", "algebra__max_depth", "algebra__n_leaves", "algebra__max_branching_factor",
-    "algebra__mean_branching_factor", "algebra__n_binary_ops", "algebra__n_unary_ops",
-    "algebra__longest_unary_chain", "algebra__jena_has_group_by", "algebra__jena_has_having",
+    "query_num_triple_patterns", "query_num_entities", "query_num_properties", "query_num_variables",
+    "query_num_optional", "query_num_union", "query_num_filter", "query_num_subqueries", "query_num_aggregates",
+    "query_num_group_by", "query_num_order_by", "query_length_chars", "question_length_words", "query_is_ask",
+    "query_num_computed_values", "query_num_distinct", "query_num_limit_offset", "query_num_property_paths",
+    "query_has_having", "entity_num_statements_mean", "entity_num_references_mean", "entity_num_properties_mean",
+    "entity_num_sitelinks_mean", "entity_num_aliases_mean", "entity_num_languages_mean",
+    "entity_outgoing_degree_mean", "entity_incoming_degree_mean", "entity_entropy_mean", "entity_obscurity_mean",
+    "has_property", "property_num_triples_mean", "property_num_values_mean", "property_entropy_mean",
+    "property_num_subjects_mean", "property_obscurity_mean",
 ]
-assert len(FEATURES) == 86
 
 CHAT_PROMPT = {"system": "Answer the question directly and concisely. Do not provide explanations "
                          "or additional information unless necessary to answer the question.",
@@ -164,7 +155,7 @@ def main():
     feats = load_features(args.features)
     missing = [r["id"] for r in rows if r["id"] not in feats or any(c not in feats[r["id"]] for c in FEATURES)]
     if missing:
-        sys.exit(f"{len(missing)} questions without all 86 features, e.g. {missing[:5]}")
+        sys.exit(f"{len(missing)} questions without all features, e.g. {missing[:5]}")
     with open(out / "features_14729.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["id", "source_id"] + FEATURES)

@@ -2,15 +2,14 @@
 
 | Step | Script | Output |
 |---|---|---|
-| 1 | `features_wikidata.py` | 61 Wikidata / query features per question (QLever endpoint) |
-| 2 | `features_jena.py` | 25 Jena features per question (Java code embedded; Apache Jena 6.2.0, Java 21) |
+| 1 | `features_wikidata.py` | query-text and Wikidata features per question (QLever endpoint) |
+| 2 | `features_jena.py` | query features from the parsed query and its algebra (Java code embedded; Apache Jena 6.2.0, Java 21) |
 | 3 | `generate_answers.py` | answers of one LLM (raw prompt via Hugging Face or vLLM; chat via vLLM) |
-| 4 | `merge_datasets.py` | release files: dataset, raw features (86, `features_14729.csv`), answers |
+| 4 | `merge_datasets.py` | release files: dataset, features (`features_14729.csv`), answers |
 | 5 | `evaluate_answers.py` | GPT-5.4-mini 7-point judgments (`answers_eval_14729.jsonl`) |
 | 6 | `evaluate_answers_claude.py` | Claude Haiku 5.5 7-point judgments (alternative judge, same prompt) |
 | 7 | `plot_accuracy.py` | `judge_7point.{pdf,png}` |
-| 8 | `../feature_reduction/run_reduce_features.sh` | released features (35, `features_14729_reduced_mean.csv`) |
-| 9 | `../feature_reduction/run_feature_correlations.sh` | correlation of the 35 features with answer correctness (CSV + LaTeX table) |
+| 8 | `feature_correlations.py` | correlation of the features with answer correctness (`feature_correlations.{csv,tex}`) |
 
 `sparql_domain_classifier.py` assigns a domain to each question from the properties in its SPARQL
 query. It is not part of the release pipeline and needs `property_classifier.py`, which is not in
@@ -31,14 +30,9 @@ python evaluate_answers_claude.py --answers release/answers_14729.jsonl --api-ke
                             --output release/answers_eval_claude_14729.jsonl      # optional second judge
 python merge_datasets.py checksums --output-dir release
 python plot_accuracy.py     --input release/answers_eval_14729.jsonl --output-dir figures
-bash ../feature_reduction/run_reduce_features.sh release/features_14729.csv
-bash ../feature_reduction/run_feature_correlations.sh
+python feature_correlations.py --features release/features_14729.csv --eval release/answers_eval_14729.jsonl \
+                            --output release/feature_correlations.csv --latex release/feature_correlations.tex
 ```
-
-Steps 8–9 write to `data/feature_reduction/`; step 9 reads `data/answers_eval_14729.jsonl`.
-Feature reduction (step 8) removes constant features, query features that count a SPARQL construct
-already counted by another feature or describe Jena's internal operator tree, and keeps the mean of
-each entity / property statistic (86 → 35 features; see `../feature_reduction/reduce_features.py`).
 
 Requirements: Python 3.12 (numpy, pandas, matplotlib, requests, openai, anthropic; torch + transformers
 for Hugging Face generation), a QLever Wikidata endpoint, Apache Jena 6.2.0 with Java 21,
