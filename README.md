@@ -1,4 +1,4 @@
-# Hallucination Detection Dataset
+# WikiStructQA
 
 14,729 Wikidata questions with SPARQL queries, answers of five LLMs, judgments of the answers and
 features of the questions, queries, entities and properties.
