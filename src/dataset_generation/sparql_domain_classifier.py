@@ -1,45 +1,3 @@
-"""
-sparql_domain_classifier.py — assign a "domain" to NL-question/SPARQL pairs.
-
-Mirrors the methodology already used in this project for KG-traversal triples
-(see property_classifier.py / kg_traverser.py / path_extractor.py), but
-instead of walking the graph ourselves, it:
-
-  1. Reads a dataset of {question, sparql} records (JSON array, JSON-lines,
-     or CSV).
-  2. Extracts every Wikidata property ID (Pxxx) referenced in each SPARQL
-     query — via prefixed forms (wdt:P.., p:P.., ps:P.., pq:P..) and full
-     URIs (http://www.wikidata.org/prop/.../Pxxx).
-  3. Classifies each property into a domain using the SAME
-     PropertyClassifier used elsewhere in this project — manual overrides
-     first, then local cache, then a live Wikidata wbgetentities fetch of
-     the property's English label+description, keyword-matched against the
-     same _DOMAIN_KEYWORDS priority list. Results are cached to disk, so
-     re-running costs no extra API calls.
-  4. Consolidates the (possibly several) per-query property domains into one
-     query_domain, per --strategy:
-       - "last"     (default): domain of the LAST property in the query —
-                      matches the 2-hop convention in path_extractor.py,
-                      where the final hop's property determines the domain.
-       - "first":    domain of the first property.
-       - "majority": most common domain among the query's properties
-                      (ties broken by order of first appearance).
-  5. Writes an augmented copy of the dataset plus a domain-ablation-style
-     summary (counts per domain), analogous to Evaluator.domain_ablation().
-
-Usage:
-    python sparql_domain_classifier.py \\
-        --input my_dataset.json \\
-        --output my_dataset_with_domains.json \\
-        --question-field question \\
-        --sparql-field sparql \\
-        --strategy last
-
-If --question-field / --sparql-field are omitted, the script auto-detects
-common column/key names (question, nl, nlq, utterance / sparql, query,
-sparql_query).
-"""
-
 import argparse
 import csv
 import json
@@ -49,18 +7,14 @@ import sys
 from collections import Counter
 from typing import Dict, List, Optional
 
-from property_classifier import PropertyClassifier
+from property_classifier import META_PROPERTIES, PropertyClassifier
 
 # ----------------------------------------------------------------------
 # Property-ID extraction from raw SPARQL text
 # ----------------------------------------------------------------------
 
-# Prefixed forms: wdt:P31, p:P108, ps:P69, pq:P580, wdtn:P..., etc.
 _PREFIXED_PROP_RE = re.compile(r"\b(?:wdt|p|ps|pq|psv|pqv|wdno|wdtn)n?:(P\d+)\b")
 
-# Full URI forms: http://www.wikidata.org/prop/direct/P31,
-#                 http://www.wikidata.org/prop/P108,
-#                 http://www.wikidata.org/prop/statement/P69, etc.
 _URI_PROP_RE = re.compile(
     r"wikidata\.org/prop/(?:direct(?:-normalized)?/|statement(?:/value)?/|"
     r"qualifier(?:/value)?/|reference(?:/value)?/)?(P\d+)\b"
@@ -166,7 +120,10 @@ def consolidate_domain(domains: List[str], strategy: str) -> str:
             if counts[d] == top_count:
                 return d
         return domains[0]
-    # default: "last"
+    if strategy == "last-with-domain":
+        with_domain = [d for d in domains if d != "Other"]
+        return with_domain[-1] if with_domain else "Other"
+    # "last"
     return domains[-1]
 
 
@@ -180,8 +137,8 @@ def main():
     ap.add_argument("--output", required=True, help="Path to write the augmented dataset.")
     ap.add_argument("--question-field", default=None, help="Field/column name holding the NL question (auto-detected if omitted).")
     ap.add_argument("--sparql-field", default=None, help="Field/column name holding the SPARQL query (auto-detected if omitted).")
-    ap.add_argument("--strategy", default="last", choices=["last", "first", "majority"],
-                     help="How to pick one query_domain when a query references multiple properties (default: last).")
+    ap.add_argument("--strategy", default="last-with-domain", choices=["last-with-domain", "last", "first", "majority"],
+                     help="How to pick one query_domain when a query references multiple properties (default: last-with-domain).")
     ap.add_argument("--cache-path", default="data/cache/property_domains.json",
                      help="Local cache for property label/domain lookups (shared with the rest of the pipeline).")
     ap.add_argument("--summary-output", default=None,
@@ -205,7 +162,6 @@ def main():
 
     # Pass 1: extract all property IDs across the whole dataset so we can
     # prefetch them in big batches (50 at a time) instead of one API call
-    # per row.
     per_row_props: List[List[str]] = []
     all_pids = set()
     for row in rows:
@@ -213,21 +169,27 @@ def main():
         per_row_props.append(pids)
         all_pids.update(pids)
 
-    print(f"Found {len(all_pids)} distinct property IDs across {len(rows)} queries. Prefetching domains...")
-    classifier.prefetch(sorted(all_pids))
+    meta = sorted(all_pids & set(META_PROPERTIES))
+    print(f"Found {len(all_pids)} distinct property IDs across {len(rows)} queries; "
+          f"{len(meta)} logical/taxonomical meta-properties are ignored ({', '.join(meta)}). Prefetching domains...")
+    classifier.prefetch(sorted(all_pids - set(META_PROPERTIES)))
 
     # Pass 2: assign domains
     domain_counts = Counter()
-    no_property_count = 0
+    no_property_count = only_meta_count = 0
     for row, pids in zip(rows, per_row_props):
-        domains = [classifier.domain(pid) for pid in pids]
+        domain_pids = [p for p in pids if p not in META_PROPERTIES]   # meta-properties are not used
+        domains = [classifier.domain(pid) for pid in domain_pids]
         query_domain = consolidate_domain(domains, args.strategy)
         row["extracted_properties"] = pids
+        row["domain_properties"] = domain_pids
         row["property_domains"] = domains
         row["query_domain"] = query_domain
         domain_counts[query_domain] += 1
         if not pids:
             no_property_count += 1
+        elif not domain_pids:
+            only_meta_count += 1
 
     save_dataset(args.output, rows)
     print(f"Wrote {len(rows)} rows -> {args.output}")
@@ -235,6 +197,8 @@ def main():
     if no_property_count:
         print(f"Warning: {no_property_count} rows had no extractable property "
               f"(check SPARQL prefixes / field name) and were labeled 'Other'.", file=sys.stderr)
+    if only_meta_count:
+        print(f"Note: {only_meta_count} rows use only meta-properties and were labeled 'Other'.", file=sys.stderr)
 
     print("\n--- Domain distribution (query_domain) ---")
     for domain, n in domain_counts.most_common():
@@ -247,6 +211,8 @@ def main():
             "strategy": args.strategy,
             "domain_counts": dict(domain_counts),
             "rows_with_no_property": no_property_count,
+            "rows_with_only_meta_properties": only_meta_count,
+            "meta_properties": META_PROPERTIES,
         }
         with open(args.summary_output, "w") as f:
             json.dump(summary, f, indent=2)

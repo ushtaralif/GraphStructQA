@@ -7,13 +7,11 @@
 | 3 | `generate_answers.py` | answers of one LLM (raw prompt via Hugging Face or vLLM; chat via vLLM) |
 | 4 | `merge_datasets.py` | release files: dataset, features (`features_14729.csv`), answers |
 | 5 | `evaluate_answers.py` | GPT-5.4-mini 7-point judgments (`answers_eval_14729.jsonl`) |
-| 6 | `evaluate_answers_claude.py` | Claude Haiku 5.5 7-point judgments (alternative judge, same prompt) |
+| 6 | `evaluate_answers_claude.py` | Claude Haiku 5.5 7-point judgments (second judge, same prompt), added to `answers_eval_14729.jsonl` |
 | 7 | `plot_accuracy.py` | `judge_7point.{pdf,png}` |
 | 8 | `feature_correlations.py` | correlation of the features with answer correctness (`feature_correlations.{csv,tex}`) |
-
-`sparql_domain_classifier.py` assigns a domain to each question from the properties in its SPARQL
-query. It is not part of the release pipeline and needs `property_classifier.py`, which is not in
-this repository.
+| 9 | `sparql_domain_classifier.py` | domain of each question from the properties in its SPARQL query (`question_domains_14729.json`); property domains come from `property_classifier.py` (Wikidata labels and descriptions) |
+| 10 | `plot_domain_accuracy.py` | accuracy per domain and model for both judges (`accuracy_by_domain.{pdf,png,csv}`) |
 
 Each script documents its options (`--help`). Typical run:
 
@@ -26,12 +24,15 @@ python generate_answers.py  --dataset dataset_14729.jsonl --mode chat --served-m
 python merge_datasets.py    --dataset train.json valid.json test.json --features features_wikidata.csv features_jena.csv \
                             --answers "<MODEL>-answer=answers_<model>.jsonl" ... --output-dir release
 python evaluate_answers.py  --answers release/answers_14729.jsonl --output release/answers_eval_14729.jsonl
-python evaluate_answers_claude.py --answers release/answers_14729.jsonl --api-key-file <key file> \
-                            --output release/answers_eval_claude_14729.jsonl      # optional second judge
+python evaluate_answers_claude.py --answers release/answers_eval_14729.jsonl --api-key-file <key file> \
+                            --output release/answers_eval_14729.jsonl
 python merge_datasets.py checksums --output-dir release
 python plot_accuracy.py     --input release/answers_eval_14729.jsonl --output-dir figures
 python feature_correlations.py --features release/features_14729.csv --eval release/answers_eval_14729.jsonl \
                             --output release/feature_correlations.csv --latex release/feature_correlations.tex
+python sparql_domain_classifier.py --input $Q --output release/question_domains_14729.json
+python plot_domain_accuracy.py --answers release/answers_eval_14729.jsonl \
+                            --domains release/question_domains_14729.json --output-dir figures
 ```
 
 Requirements: Python 3.12 (numpy, pandas, matplotlib, requests, openai, anthropic; torch + transformers
