@@ -4,8 +4,6 @@ WikiStructQA is a research resource for studying large language model (LLM) answ
 
 The resource contains 14,729 natural-language questions paired with SPARQL queries, reference answers, structural and query features, responses from five LLMs, and answer-correctness judgments from two LLM evaluators.
 
-# WikiStructQA
-
 <p align="center">
   <img src="figures/wikistructqa.png" alt="WikiStructQA overview" width="50%">
 </p>
