@@ -12,7 +12,7 @@ GraphStructQA is a research resource for studying large language model (LLM) ans
 |---|---|
 | [Dataset](https://github.com/ushtaralif/WikiStructQA/tree/main/data) | Dataset files, annotations, features, and analysis outputs. See the [data README](data/README.md). |
 | [Source Code](src/) | Scripts for feature extraction, answer generation, evaluation, and analysis. See the [source README](src/README.md). |
-| [`doc/`](figures/) | Various documentation and background details about the resource.  |
+| [`doc/`](doc/) | Various documentation and background details about the resource.  |
 
 
 ## Query and Structural Features
