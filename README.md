@@ -1,7 +1,7 @@
-# WikiStructQA
+# GraphStructQA
 
 <p align="center">
-  <img src="doc/figures/wikistructqa.png" alt="WikiStructQA overview" width="80%">
+  <img src="doc/figures/graphstructqa.png" alt="WikiStructQA overview" width="80%">
 </p>
 
 GraphStructQA is a research resource for studying large language model (LLM) answer reliability in relation to Wikidata knowledge graph structure and SPARQL query characteristics. The resource contains 14,729 natural-language questions paired with SPARQL queries, reference answers, structural and query features, responses from five LLMs, and answer-correctness judgments from two LLM evaluators.
@@ -12,7 +12,7 @@ GraphStructQA is a research resource for studying large language model (LLM) ans
 |---|---|
 | [Dataset](https://github.com/ushtaralif/WikiStructQA/tree/main/data) | Dataset files, annotations, features, and analysis outputs. See the [data README](data/README.md). |
 | [Source Code](src/) | Scripts for feature extraction, answer generation, evaluation, and analysis. See the [source README](src/README.md). |
-| [`doc/`](figures/) | Various documentation details. |
+| [`doc/`](figures/) | Various documentation and background details about the resource.  |
 
 
 ## Query and Structural Features
