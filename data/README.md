@@ -20,3 +20,13 @@ prompt on a 7-point scale:
 5. Inaccurate (probable fabrication / hallucination)
 6. Inaccurate (irrelevant)
 7. Completely inaccurate
+
+## Licensing
+
+Original GraphStructQA contributions are licensed under Apache 2.0.
+Incorporated source material retains its upstream terms, including
+CC BY 4.0 for WikiWebQuestions material.
+
+See [LICENSE](../LICENSE),
+[CC BY 4.0](../LICENSES/CC-BY-4.0.txt), and
+[Third-party notices](../THIRD_PARTY_NOTICES.md).
