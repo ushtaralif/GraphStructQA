@@ -16,7 +16,7 @@ GraphStructQA is a research resource for studying large language model (LLM) ans
 
 ## Query and Structural Features
 
-A central component of GraphStructQA is its set of 35 query and knowledge graph structural features. These enable analysis of how query complexity and the characteristics of associated entities and properties relate to LLM answer accuracy.
+A central component of GraphStructQA is its extracted query and knowledge graph structural features. These enable analysis of how query complexity and the characteristics of associated entities and properties relate to LLM answer accuracy.
 
 See [Feature descriptions](doc/features.md) for definitions and computation details.
 
