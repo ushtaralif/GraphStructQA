@@ -1,6 +1,6 @@
 # GraphStructQA data
 
-Release files are grouped by month. `10-2026/` contains the October 2026 release; filenames do not include the record count. IDs are unchanged.
+Release files are grouped by month. `10-2026/` contains the October 2026 contributions; filenames do not include the record count. 
 
 | File in `10-2026/` | Content |
 |---|---|
