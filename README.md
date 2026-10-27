@@ -12,8 +12,7 @@ GraphStructQA is a research resource for studying large language model (LLM) ans
 |---|---|
 | [Dataset](https://github.com/ushtaralif/WikiStructQA/tree/main/data) | Dataset files, annotations, features, and analysis outputs. See the [data README](data/README.md). |
 | [Source Code](src/) | Scripts for feature extraction, answer generation, evaluation, and analysis. See the [source README](src/README.md). |
-| [`doc/`](doc/) | Various documentation and background details about the resource.  |
-
+| [Documentation](doc/) | Various documentation and background details about the resource.  |
 
 ## Query and Structural Features
 
@@ -33,15 +32,27 @@ The resource currently includes responses from five LLMs:
 
 Responses have been independently assessed by two LLM evaluators: **GPT-5.4-mini** and **Claude Haiku 5.5**. Both use the same seven-category evaluation rubric, with categories 1–3 treated as correct. Prompts can be obtained from the source code.
 
-### License and attribution
+## License and attribution
 
-GraphStructQA is derived in part from the Wikidata Query Logs (WDQL) dataset and WikiWebQuestions (WWQ).
+Unless otherwise indicated, original contributions to GraphStructQA,
+including source code, documentation, and original dataset contributions
+to the extent that rights subsist, are licensed under the
+[Apache License 2.0](LICENSE).
 
-Original contributions to WikiStructQA are made available under the Creative Commons Attribution 4.0 International (CC BY 4.0) license, subject to any applicable rights and licensing conditions of the source datasets.
+Third-party material retains its applicable upstream terms:
 
-- **WDQL:** Sebastian Walter and Hannah Bast, *The Wikidata Query Logs Dataset* (2026). https://github.com/ad-freiburg/wikidata-query-logs
-- **WWQ:** Silei Xu et al., *Fine-tuned LLMs Know More, Hallucinate Less with Few-Shot Sequence-to-Sequence Semantic Parsing over Wikidata* (2023). https://github.com/stanford-oval/wikidata-emnlp23
-- **Wikidata:** https://www.wikidata.org — CC0 1.0.
+- **Wikidata Query Logs (WDQL):** Apache License 2.0.
+- **WikiWebQuestions (WWQ), including material derived from
+  WebQuestions:** Creative Commons Attribution 4.0 International
+  ([CC BY 4.0](LICENSES/CC-BY-4.0.txt)).
+- **Wikidata structured data:** CC0 1.0.
 
-Users should acknowledge the original datasets as well as WikiStructQA when redistributing or building upon this resource.
+The Apache licence for our contributions does not replace the applicable
+licences of incorporated third-party material. Files containing material
+from multiple sources remain subject to the relevant terms for each part.
 
+See [Third-party notices](THIRD_PARTY_NOTICES.md) for source references
+and a description of our modifications.
+
+When using this resource in research, please cite GraphStructQA and
+the relevant source datasets.
